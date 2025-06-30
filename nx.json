@@ -37,7 +37,11 @@
       "options": {
         "targetName": "test"
       },
-      "exclude": ["apps/order-microservice-e2e/**/*"]
+      "exclude": [
+        "apps/order-microservice-e2e/**/*",
+        "apps/payment-microservice-e2e/**/*",
+        "apps/notification-microservice-e2e/**/*"
+      ]
     }
   ]
 }
