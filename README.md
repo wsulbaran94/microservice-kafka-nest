@@ -1,82 +1,219 @@
-# KafkaMonorepo
+# Kafka Monorepo - Sistema de Microservicios
 
 <a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
+Un monorepo construido con **NestJS** y **Apache Kafka** que implementa una arquitectura de microservicios para procesar órdenes, pagos y notificaciones de manera asíncrona.
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/nest?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+## 🏗️ Arquitectura
 
-## Finish your CI setup
+Este proyecto demuestra un sistema distribuido escalable usando patrones de arquitectura basada en eventos con los siguientes componentes:
 
-[Click here to finish setting up your workspace!](https://cloud.nx.app/connect/LggUnxRtVK)
+### Servicios
+
+- **🔧 API Gateway** (`api-gateway`): Punto de entrada principal que recibe solicitudes HTTP y las publica en Kafka
+- **📦 Order Microservice** (`order-microservice`): Procesa las órdenes creadas y las envía al servicio de pagos
+- **💳 Payment Microservice** (`payment-microservice`): Maneja el procesamiento de pagos y confirma transacciones
+- **📧 Notification Microservice** (`notification-microservice`): Envía notificaciones cuando ocurren eventos importantes
+
+### Flujo de Trabajo
+
+```
+Cliente → API Gateway → Kafka → Order Service → Payment Service → Notification Service
+                         ↓           ↓              ↓
+                    order-created → process-payment → payment-success
+```
+
+1. Un cliente envía una orden al API Gateway via POST `/order`
+2. El Gateway publica el evento `order-created` en Kafka
+3. El Order Service recibe el evento y emite `process-payment`
+4. El Payment Service procesa el pago y emite `payment-success`
+5. El Notification Service envía confirmaciones en cada paso del proceso
+
+## 🛠️ Tecnologías
+
+- **[NestJS](https://nestjs.com/)** - Framework progresivo para Node.js
+- **[Apache Kafka](https://kafka.apache.org/)** - Plataforma de streaming distribuido
+- **[KafkaJS](https://kafka.js.org/)** - Cliente moderno de Kafka para Node.js
+- **[Nx](https://nx.dev/)** - Herramientas de desarrollo para monorepos
+- **[Docker Compose](https://docs.docker.com/compose/)** - Orquestación de contenedores
+
+## 🚀 Inicio Rápido
+
+### Prerequisitos
+
+- Node.js (v18 o superior)
+- Docker y Docker Compose
+- npm o yarn
+
+### Instalación
+
+1. **Clonar el repositorio**
+   ```bash
+   git clone <repository-url>
+   cd kafka-monorepo
+   ```
+
+2. **Instalar dependencias**
+   ```bash
+   npm install
+   ```
+
+3. **Iniciar Kafka y Zookeeper**
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Ejecutar los servicios**
+   ```bash
+   # API Gateway
+   npx nx serve api-gateway
+   
+   # Order Microservice
+   npx nx serve order-microservice
+   
+   # Payment Microservice
+   npx nx serve payment-microservice
+   
+   # Notification Microservice
+   npx nx serve notification-microservice
+   ```
+
+### Prueba del Sistema
+
+Envía una orden para probar el flujo completo:
+
+```bash
+curl -X POST http://localhost:3000/order \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "12345",
+    "product": "Laptop",
+    "amount": 999.99,
+    "customer": "john@example.com"
+  }'
+```
 
 
-## Run tasks
+Verás los logs en cada microservicio mostrando el flujo de eventos.
 
-To run the dev server for your app, use:
+## 📋 Comandos Disponibles
 
-```sh
+### Desarrollo
+
+```bash
+# Ejecutar un servicio específico
+npx nx serve <service-name>
+
+# Ejemplos:
 npx nx serve api-gateway
+npx nx serve order-microservice
+npx nx serve payment-microservice
+npx nx serve notification-microservice
 ```
 
-To create a production bundle:
+### Build y Testing
 
-```sh
-npx nx build api-gateway
+```bash
+# Crear build de producción
+npx nx build <service-name>
+
+# Ejecutar tests
+npx nx test <service-name>
+
+# Ejecutar tests e2e
+npx nx e2e <service-name>-e2e
+
+# Ver todos los targets disponibles
+npx nx show project <service-name>
 ```
 
-To see all available targets to run for a project, run:
+### Nx Utilities
 
-```sh
-npx nx show project api-gateway
+```bash
+# Visualizar el gráfico de dependencias
+npx nx graph
+
+# Ejecutar comandos en paralelo
+npx nx run-many --target=build --all
+
+# Generar nueva aplicación
+npx nx g @nx/nest:app <app-name>
+
+# Generar nueva librería
+npx nx g @nx/nest:lib <lib-name>
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+## 🔧 Configuración
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### Variables de Entorno
 
-## Add new projects
+Cada microservicio puede configurarse mediante variables de entorno:
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+```bash
+# Kafka Configuration
+KAFKA_BROKERS=localhost:9092
+KAFKA_CLIENT_ID=microservice-name
 
-Use the plugin's generator to create new projects.
-
-To generate a new application, use:
-
-```sh
-npx nx g @nx/nest:app demo
+# Service Ports
+API_GATEWAY_PORT=3000
+ORDER_SERVICE_PORT=3001
+PAYMENT_SERVICE_PORT=3002
+NOTIFICATION_SERVICE_PORT=3003
 ```
 
-To generate a new library, use:
+### Docker Compose
 
-```sh
-npx nx g @nx/node:lib mylib
+El archivo `docker-compose.yml` incluye:
+- **Zookeeper**: Coordinación de Kafka (puerto 2181)
+- **Kafka**: Broker de mensajes (puerto 9092)
+
+## 📁 Estructura del Proyecto
+
+```
+kafka-monorepo/
+├── apps/
+│   ├── api-gateway/              # Gateway HTTP REST
+│   ├── order-microservice/       # Procesamiento de órdenes
+│   ├── payment-microservice/     # Procesamiento de pagos
+│   ├── notification-microservice/ # Sistema de notificaciones
+│   └── *-e2e/                   # Tests end-to-end
+├── libs/                         # Librerías compartidas
+├── docker-compose.yml            # Configuración de Kafka
+└── nx.json                       # Configuración de Nx
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+## 📚 Eventos de Kafka
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### Eventos Publicados
 
+| Evento | Publicado por | Consumido por | Payload |
+|--------|---------------|---------------|---------|
+| `order-created` | API Gateway | Order Service, Notification Service | Order data |
+| `process-payment` | Order Service | Payment Service | Order data |
+| `payment-success` | Payment Service | Notification Service | Payment data |
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### Flujo de Mensajes
 
-## Install Nx Console
+```mermaid
+graph LR
+    A[API Gateway] -->|order-created| B[Order Service]
+    A -->|order-created| D[Notification Service]
+    B -->|process-payment| C[Payment Service]
+    C -->|payment-success| D
+```
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+## 🤝 Contribución
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit tus cambios (`git commit -m 'Añadir nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Abre un Pull Request
 
-## Useful links
+## 📄 Licencia
 
-Learn more:
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
 
-- [Learn more about this workspace setup](https://nx.dev/nx-api/nest?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+---
 
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+**✨ Desarrollado con Nx Workspace - Herramientas de desarrollo de próxima generación para monorepos ✨**
